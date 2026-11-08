@@ -78,6 +78,7 @@ jobs:
         working-directory: _app
         run: |
           flutter pub get
+          flutter pub add youtube_explode_dart just_audio just_audio_backgroundflutter pub add youtube_explode_dart just_audio just_audio_background
           flutter build apk --release
 
       - name: Publicar APK
