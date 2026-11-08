@@ -6,12 +6,12 @@ version: 1.0.0+1
 environment:
   sdk: ">=3.3.0 <4.0.0"
 
-dependencies:
-  flutter:
-    sdk: flutter
-  youtube_explode_dart: ^2.3.0
-  just_audio: ^0.9.40
-  just_audio_background: ^0.0.1-beta.13
+  dependencies:
+    flutter:
+        sdk: flutter
+          youtube_explode_dart: ^2.3.0
+            just_audio: ^0.9.40
+              just_audio_background: ^0.0.1-beta.13
 
-flutter:
-  uses-material-design: true
+              flutter:
+                uses-material-design: true
