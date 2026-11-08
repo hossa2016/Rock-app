@@ -201,7 +201,7 @@ class _HomeState extends State<Home> {
                                                                                                                                                                                                                                                                                                                                                                                                                                   }
                                                                                                                                                                                                                                                                                                                                                                                                                                       setState(() => loadingTrack = false);
                                                                                                                                                                                                                                                                                                                                                                                                                                         }
-   } String fmt(Duration d) {
+   String fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString();
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
