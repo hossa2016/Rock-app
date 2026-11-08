@@ -27,7 +27,7 @@ jobs:
       - name: Crear proyecto Android base
         run: |
           flutter create --platforms=android --org com.hernan --project-name rock_app _app
-          cp pubspec.yaml _app/pubspec.yaml
+          
           rm -rf _app/lib
           cp -r lib _app/lib
 
