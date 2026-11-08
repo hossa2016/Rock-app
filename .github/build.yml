@@ -1,0 +1,88 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Crear proyecto Android base
+        run: |
+          flutter create --platforms=android --org com.hernan --project-name rock_app _app
+          cp pubspec.yaml _app/pubspec.yaml
+          rm -rf _app/lib
+          cp -r lib _app/lib
+
+      - name: Configurar audio en segundo plano
+        run: |
+          python3 - <<'EOF'
+          import glob, re
+
+          manifest_path = "_app/android/app/src/main/AndroidManifest.xml"
+          m = open(manifest_path, encoding="utf-8").read()
+
+          perms = """    <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+              """
+          m = m.replace("<application", perms + "<application", 1)
+
+          extra = """
+                  <service android:name="com.ryanheise.audioservice.AudioService"
+                      android:foregroundServiceType="mediaPlayback"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.media.browse.MediaBrowserService"/>
+                      </intent-filter>
+                  </service>
+                  <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MEDIA_BUTTON"/>
+                      </intent-filter>
+                  </receiver>
+              """
+          m = m.replace("</application>", extra + "</application>", 1)
+          open(manifest_path, "w", encoding="utf-8").write(m)
+
+          for path in glob.glob("_app/android/app/src/main/**/MainActivity.kt", recursive=True):
+              src = open(path, encoding="utf-8").read()
+              pkg = re.search(r"^package\s+[\w.]+", src, re.M).group(0)
+              open(path, "w", encoding="utf-8").write(
+                  pkg + "\n\n"
+                  "import com.ryanheise.audioservice.AudioServiceActivity\n\n"
+                  "class MainActivity : AudioServiceActivity()\n"
+              )
+          EOF
+
+      - name: Compilar APK
+        working-directory: _app
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Publicar APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          files: _app/build/app/outputs/flutter-apk/app-release.apk
