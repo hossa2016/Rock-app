@@ -109,7 +109,7 @@ class _HomeState extends State<Home> {
     }
   }
 
-  Future<void> playAt(int i) async {
+  Future<void> playAtOld(int i) async {
     if (i < 0 || i >= results.length) return;
     final v = results[i];
     setState(() {
@@ -145,7 +145,63 @@ class _HomeState extends State<Home> {
     }
   }
 
-  String fmt(Duration d) {
+   Future<void> playAt(int i) async {
+        if (i < 0 || i >= results.length) return;
+            final v = results[i];
+                setState(() {
+                      current = i;
+                            loadingTrack = true;
+                                  error = null;
+                                      });
+                                          final attempts = <(YoutubeApiClient, String?)>[
+                                                (
+                                                        YoutubeApiClient.androidVr,
+                                                                'com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip'
+                                                                      ),
+                                                                            (
+                                                                                    YoutubeApiClient.ios,
+                                                                                            'com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)'
+                                                                                                  ),
+                                                                                                        (YoutubeApiClient.tv, null),
+                                                                                                            ];
+                                                                                                                String? lastError = 'No hay audio disponible';
+                                                                                                                    for (final (client, ua) in attempts) {
+                                                                                                                          try {
+                                                                                                                                  final manifest = await yt.videos.streamsClient
+                                                                                                                                              .getManifest(v.id, ytClients: [client]);
+                                                                                                                                                      final audios = manifest.audioOnly.toList();
+                                                                                                                                                              if (audios.isEmpty) continue;
+                                                                                                                                                                      final mp4 = audios.where((a) => a.container.name == 'mp4').toList();
+                                                                                                                                                                              final pool = mp4.isNotEmpty ? mp4 : audios;
+                                                                                                                                                                                      pool.sort((a, b) =>
+                                                                                                                                                                                                  b.bitrate.bitsPerSecond.compareTo(a.bitrate.bitsPerSecond));
+                                                                                                                                                                                                          final stream = pool.first;
+                                                                                                                                                                                                                  await player.setAudioSource(
+                                                                                                                                                                                                                            AudioSource.uri(
+                                                                                                                                                                                                                                        stream.url,
+                                                                                                                                                                                                                                                    headers: ua == null ? null : {'User-Agent': ua},
+                                                                                                                                                                                                                                                                tag: MediaItem(
+                                                                                                                                                                                                                                                                              id: v.id.value,
+                                                                                                                                                                                                                                                                                            title: v.title,
+                                                                                                                                                                                                                                                                                                          artist: v.author,
+                                                                                                                                                                                                                                                                                                                        artUri: Uri.parse(v.thumbnails.highResUrl),
+                                                                                                                                                                                                                                                                                                                                      duration: v.duration,
+                                                                                                                                                                                                                                                                                                                                                  ),
+                                                                                                                                                                                                                                                                                                                                                            ),
+                                                                                                                                                                                                                                                                                                                                                                    );
+                                                                                                                                                                                                                                                                                                                                                                            player.play();
+                                                                                                                                                                                                                                                                                                                                                                                    lastError = null;
+                                                                                                                                                                                                                                                                                                                                                                                            break;
+                                                                                                                                                                                                                                                                                                                                                                                                  } catch (e) {
+                                                                                                                                                                                                                                                                                                                                                                                                          lastError = '$e';
+                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                        if (lastError != null) {
+                                                                                                                                                                                                                                                                                                                                                                                                                              setState(() => error = 'No se pudo reproducir: $lastError');
+                                                                                                                                                                                                                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                                                                                                                                                                                                                      setState(() => loadingTrack = false);
+                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+   } String fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString();
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
